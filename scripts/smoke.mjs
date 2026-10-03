@@ -47,24 +47,24 @@ function fieldFor(placeholder) {
     };
   }
 
-  if (key.endsWith("_date")) return { key, label: key, type: "date" };
-  if (key === "faculty")
+  if (key.startsWith("วัน")) return { key, label: key, type: "date" };
+  if (key === "คณะ")
     return {
       key,
       label: "คณะ",
       type: "select",
       options: ["วิศวกรรมคอมพิวเตอร์", "วิทยาการคอมพิวเตอร์"],
     };
-  if (key === "position")
+  if (key === "ตำแหน่งงาน")
     return { key, label: "ตำแหน่ง", type: "radio", options: ["Developer", "Tester"] };
-  if (key === "job_description") return { key, label: "ลักษณะงาน", type: "textarea" };
+  if (key === "ลักษณะงาน") return { key, label: "ลักษณะงาน", type: "textarea" };
   return { key, label: key, type: "text" };
 }
 
 function answerFor(field) {
   switch (field.type) {
     case "date":
-      return field.key === "start_date" ? "2026-11-03" : "2027-03-31";
+      return field.key === "วันเริ่มงาน" ? "2026-11-03" : "2027-03-31";
     case "select":
     case "radio":
       return field.options[0];
@@ -103,16 +103,16 @@ check(
 // placeholder ที่ถูกแตกเป็นหลาย run ต้องถูกเชื่อมกลับได้
 if (isSample) {
   check(
-    "   เจอ student_name ที่ถูกแตกเป็น 3 text run",
-    template.keys.includes("student_name"),
+    "   เจอ ชื่อ-นามสกุล ที่ถูกแตกเป็น 3 text run",
+    template.keys.includes("ชื่อ-นามสกุล"),
   );
 
   // ── ตาราง: เซลล์ก็คือ <w:p><w:r><w:t> เหมือนย่อหน้าทั่วไป ไม่ต้องทำอะไรเพิ่ม ──
   const tableKeys = [
-    "edu_lower_year",
-    "edu_lower_school",
-    "edu_upper_gpa",
-    "edu_bachelor_major",
+    "มัธยมต้น_ปีที่จบ",
+    "มัธยมต้น_สถานศึกษา",
+    "มัธยมปลาย_เกรดเฉลี่ย",
+    "ปริญญาตรี_สาขาวิชา",
   ];
   const missingTable = tableKeys.filter((k) => !template.keys.includes(k));
   check(
@@ -122,19 +122,19 @@ if (isSample) {
   );
 
   // ── ช่องติ๊ก: {a=x} {a=y} ต้องยุบเหลือฟิลด์เดียว ──
-  const license = placeholders.find((p) => p.key === "has_license");
-  check("   has_license ยุบเป็นฟิลด์เดียว", license?.kind === "choice");
+  const license = placeholders.find((p) => p.key === "ใบขับขี่");
+  check("   ใบขับขี่ ยุบเป็นฟิลด์เดียว", license?.kind === "choice");
   check(
-    "   has_license มี 2 ตัวเลือกจากเอกสาร",
+    "   ใบขับขี่ มี 2 ตัวเลือกจากเอกสาร",
     license?.values?.join("/") === "มี/ไม่มี",
     license?.values?.join("/"),
   );
 
-  const skills = placeholders.find((p) => p.key === "skills");
-  check("   skills มี 3 ตัวเลือกจากเอกสาร", skills?.values?.length === 3);
+  const skills = placeholders.find((p) => p.key === "ความสามารถพิเศษ");
+  check("   ความสามารถพิเศษ มี 3 ตัวเลือกจากเอกสาร", skills?.values?.length === 3);
 
   check(
-    "   ไม่มี key ดิบ has_license=… หลุดมาเป็นฟิลด์",
+    "   ไม่มี key ดิบ ใบขับขี่=… หลุดมาเป็นฟิลด์",
     !placeholders.some((p) => p.key.includes("=")),
   );
 }
@@ -214,24 +214,29 @@ for (const field of fields) {
   check(`5d. เอกสารมีคำตอบของ {${field.key}}`, parts.every((p) => text.includes(p)));
 }
 
-// ── 5e. ช่องติ๊ก: กล่องที่เลือกต้องเป็น þ ที่ไม่ได้เลือกต้องเป็น o ──
-// เทียบคู่กับ label ที่อยู่ถัดไป (เช่น "þ มี") แทนการนับตัวอักษรรวม
-// เพราะ 'o' โผล่ในคำตอบอื่นได้ เช่น "Developer"
+// ── 5e. ช่องติ๊ก: กล่องที่เลือกต้องเป็น ☑ ที่ไม่ได้เลือกต้องเป็น ☐ ──
+// อ่านจาก env ชุดเดียวกับที่เซิร์ฟเวอร์ใช้ จะได้เทส template แบบ Wingdings ได้ด้วย
+// (CHECKBOX_CHECKED=þ CHECKBOX_UNCHECKED=o npm run smoke)
+const CHECKED = process.env.CHECKBOX_CHECKED ?? "☑";
+const UNCHECKED = process.env.CHECKBOX_UNCHECKED ?? "☐";
+
+// เทียบคู่กับ label ที่อยู่ถัดไป (เช่น "☑ มี") แทนการนับตัวอักษรรวม
+// เพราะสัญลักษณ์บางตัว (เช่น 'o' ของ Wingdings) โผล่ในคำตอบอื่นได้ เช่น "Developer"
 for (const choice of choices) {
   const answer = answers[choice.key];
   const picked = Array.isArray(answer) ? answer : [answer];
 
   for (const value of choice.values) {
     const selected = picked.includes(value);
-    const expected = `${selected ? "þ" : "o"} ${value}`;
-    const ok = text.includes(expected);
+    const symbol = selected ? CHECKED : UNCHECKED;
+    const ok = text.includes(`${symbol} ${value}`);
     check(
-      `5e. {${choice.key}=${value}} → ${selected ? "ติ๊ก þ" : "ว่าง o"}`,
+      `5e. {${choice.key}=${value}} → ${selected ? "ติ๊ก" : "ว่าง"} ${symbol}`,
       ok,
       // คำนวณสาเหตุเฉพาะตอนตก ไม่งั้นข้อที่ผ่านจะมีข้อความชวนสับสนต่อท้าย
       ok
         ? ""
-        : text.includes(`${selected ? "o" : "þ"} ${value}`)
+        : text.includes(`${selected ? UNCHECKED : CHECKED} ${value}`)
           ? "ได้สัญลักษณ์ตรงข้าม"
           : "หาไม่เจอทั้งคู่",
     );
@@ -275,8 +280,14 @@ if (pdf.response.status === 503) {
     ];
     console.log(`      ฟอนต์ที่ฝังใน PDF: ${fonts.join(", ") || "(ไม่พบ)"}`);
 
-    if (path.basename(templateFile) === "sample-template.docx") {
+    if (isSample) {
       check("   PDF ฝังฟอนต์ TH SarabunPSK", fonts.some((f) => /sarabun/i.test(f)));
+      const hasSymbolFont = fonts.some((f) => /seguisym|segoeuisymbol|wingdings/i.test(f));
+      check(
+        "   PDF ฝังฟอนต์สัญลักษณ์ของช่องติ๊ก",
+        hasSymbolFont,
+        hasSymbolFont ? "" : `ได้แต่ ${fonts.join(", ")}`,
+      );
     }
 
     const pdfOut = path.join(outDir, "smoke-output.pdf");

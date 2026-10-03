@@ -76,12 +76,19 @@ export function scanPlaceholders(buffer: Buffer): ScanResult {
   }
 }
 
-// Wingdings: þ = กล่องติ๊กถูก, o = กล่องว่าง — TH SarabunPSK ไม่มี glyph ☐ ☑ เลย
-// สลับไปใช้ ☑/☐ หรือ [X]/[ ] ได้ด้วย env โดยไม่ต้องแก้โค้ด
+/**
+ * สัญลักษณ์ที่เขียนลงช่องติ๊กตอน merge
+ *
+ * ค่า default เป็น Unicode ☑ ☐ ซึ่งต้องคู่กับ run ที่ตั้งฟอนต์เป็น "Segoe UI Symbol"
+ * ในไฟล์ Word — TH SarabunPSK ไม่มี glyph สองตัวนี้เลย ถ้า run เป็นฟอนต์ไทย Word
+ * จะ fallback ไปฟอนต์อื่นเอง ขนาดกับ baseline จะเพี้ยนจากข้อความรอบๆ
+ *
+ * ถ้า template ใช้ Wingdings อยู่ ให้ตั้ง CHECKBOX_CHECKED=þ CHECKBOX_UNCHECKED=o
+ */
 function checkboxSymbols() {
   return {
-    checked: process.env.CHECKBOX_CHECKED ?? "þ",
-    unchecked: process.env.CHECKBOX_UNCHECKED ?? "o",
+    checked: process.env.CHECKBOX_CHECKED ?? "☑",
+    unchecked: process.env.CHECKBOX_UNCHECKED ?? "☐",
   };
 }
 

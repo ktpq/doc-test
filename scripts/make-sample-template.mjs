@@ -2,7 +2,7 @@
  * สร้าง sample-template.docx สำหรับเทส flow — ประกอบ OOXML เองด้วย pizzip
  * (ไม่เพิ่ม dependency ใหม่ ใช้ตัวที่ docxtemplater ต้องใช้อยู่แล้ว)
  *
- * จุดสำคัญ: {student_name} ถูกจงใจแตกเป็น 3 <w:t> run เลียนแบบสิ่งที่ Word ทำจริง
+ * จุดสำคัญ: {ชื่อ-นามสกุล} ถูกจงใจแตกเป็น 3 <w:t> run เลียนแบบสิ่งที่ Word ทำจริง
  * ตอนมีการแก้ข้อความ/เปลี่ยน format กลางคำ — เป็นตัวพิสูจน์ว่า getFullText()
  * เชื่อม run กลับให้ก่อน regex จริง
  */
@@ -21,6 +21,8 @@ const outFile = path.join(
 );
 
 const FONT = "TH SarabunPSK";
+// ฟอนต์ของ run ช่องติ๊ก — ต้องมีทั้ง ☐ ☑ และตัวอักษรปกติ เพื่อให้ template ยังอ่านออก
+const SYMBOL_FONT = "Segoe UI Symbol";
 const SIZE = 32; // half-point → 16pt ซึ่งเป็นขนาดมาตรฐานของเอกสารราชการไทย
 const HEADING_SIZE = 36; // 18pt
 
@@ -30,11 +32,13 @@ const esc = (s) =>
 /**
  * rPr ชุดเดียวกันทุก run — ตั้ง cs (complex script) ด้วย ไม่งั้น Word จะใช้ฟอนต์อื่นกับตัวอักษรไทย
  *
- * symbol: true → ใช้ Wingdings สำหรับ run ของช่องติ๊ก เพราะ TH SarabunPSK ไม่มี glyph
- * กล่องติ๊กเลย (ตรวจ cmap แล้ว) ส่วน Wingdings มี o = กล่องว่าง, þ = กล่องติ๊กถูก
+ * symbol: true → ใช้ Segoe UI Symbol สำหรับ run ของช่องติ๊ก เพราะ TH SarabunPSK
+ * ไม่มี glyph ☐ ☑ เลยสักตัว (ตรวจ cmap แล้ว) ส่วน Segoe UI Symbol มีครบ
+ * และยัง "อ่านออก" ตอนแก้ template ด้วย ต่างจาก Wingdings ที่ทำให้ {ใบขับขี่=มี}
+ * กลายเป็นสัญลักษณ์มั่วทั้งบรรทัด
  */
 const rPr = ({ bold = false, size = SIZE, symbol = false } = {}) => {
-  const font = symbol ? "Wingdings" : FONT;
+  const font = symbol ? SYMBOL_FONT : FONT;
   return `<w:rPr>${bold ? "<w:b/><w:bCs/>" : ""}<w:rFonts w:ascii="${font}" w:hAnsi="${font}" w:cs="${font}"/><w:sz w:val="${size}"/><w:szCs w:val="${size}"/><w:lang w:bidi="th-TH"/></w:rPr>`;
 };
 
@@ -42,7 +46,7 @@ const rPr = ({ bold = false, size = SIZE, symbol = false } = {}) => {
 const run = (text, opts = {}) =>
   `<w:r>${rPr(opts)}<w:t xml:space="preserve">${esc(text)}</w:t></w:r>`;
 
-/** run ของ placeholder ช่องติ๊ก — ต้องเป็น Wingdings ไม่งั้น merge แล้วจะได้ตัวอักษร þ ธรรมดา */
+/** run ของ placeholder ช่องติ๊ก — ฟอนต์ต้องมี glyph ☐ ☑ ไม่งั้น Word จะ fallback แล้วขนาดเพี้ยน */
 const box = (placeholder) => run(placeholder, { symbol: true });
 
 /** หนึ่งย่อหน้า จาก array ของ run */
@@ -81,21 +85,21 @@ const body = [
 
   para([run("ส่วนที่ 1: ข้อมูลนักศึกษา", { bold: true })]),
 
-  // ตรงนี้คือหัวใจ: {student_name} ถูกหั่นเป็น 3 run → regex ลง XML ดิบจะหาไม่เจอ
-  para([run("ชื่อ-นามสกุล: "), run("{stud"), run("ent_na"), run("me}")]),
+  // ตรงนี้คือหัวใจ: {ชื่อ-นามสกุล} ถูกหั่นเป็น 3 run → regex ลง XML ดิบจะหาไม่เจอ
+  para([run("ชื่อ-นามสกุล: "), run("{ชื่อ-"), run("นาม"), run("สกุล}")]),
 
-  line("รหัสนักศึกษา: ", "{student_id}"),
-  line("คณะ/สาขาวิชา: ", "{faculty}"),
+  line("รหัสนักศึกษา: ", "{รหัสนักศึกษา}"),
+  line("คณะ/สาขาวิชา: ", "{คณะ}"),
 
   para([run("ส่วนที่ 2: ข้อมูลสถานประกอบการ", { bold: true })]),
-  line("ชื่อสถานประกอบการ: ", "{company_name}"),
-  line("ตำแหน่งงานที่ปฏิบัติ: ", "{position}"),
-  line("ชื่อพนักงานที่ปรึกษา: ", "{supervisor_name}"),
-  line("ลักษณะงานที่มอบหมาย: ", "{job_description}"),
+  line("ชื่อสถานประกอบการ: ", "{ชื่อสถานประกอบการ}"),
+  line("ตำแหน่งงานที่ปฏิบัติ: ", "{ตำแหน่งงาน}"),
+  line("ชื่อพนักงานที่ปรึกษา: ", "{ชื่อพนักงานที่ปรึกษา}"),
+  line("ลักษณะงานที่มอบหมาย: ", "{ลักษณะงาน}"),
 
   para([run("ส่วนที่ 3: ระยะเวลาปฏิบัติงาน", { bold: true })]),
-  line("วันเริ่มปฏิบัติงาน: ", "{start_date}"),
-  line("วันสิ้นสุดการปฏิบัติงาน: ", "{end_date}"),
+  line("วันเริ่มปฏิบัติงาน: ", "{วันเริ่มงาน}"),
+  line("วันสิ้นสุดการปฏิบัติงาน: ", "{วันสิ้นสุดงาน}"),
 
   // ── ช่องติ๊กถูก ────────────────────────────────────────────────────
   // {key=value} หลายอันที่ base เดียวกันจะถูกยุบเป็นฟิลด์เดียวพร้อม option
@@ -104,20 +108,20 @@ const body = [
   // เลือกได้ค่าเดียว → ตั้งเป็น radio ในหน้า build-form
   para([
     run("8. ใบขับขี่รถยนต์       "),
-    box("{has_license=มี}"),
+    box("{ใบขับขี่=มี}"),
     run(" มี        "),
-    box("{has_license=ไม่มี}"),
+    box("{ใบขับขี่=ไม่มี}"),
     run(" ไม่มี"),
   ]),
 
   // เลือกได้หลายค่า → ตั้งเป็น checkbox ในหน้า build-form
   para([
     run("9. ความสามารถพิเศษ   "),
-    box("{skills=ว่ายน้ำ}"),
+    box("{ความสามารถพิเศษ=ว่ายน้ำ}"),
     run(" ว่ายน้ำ      "),
-    box("{skills=ขับรถ}"),
+    box("{ความสามารถพิเศษ=ขับรถ}"),
     run(" ขับรถ      "),
-    box("{skills=ภาษาอังกฤษ}"),
+    box("{ความสามารถพิเศษ=ภาษาอังกฤษ}"),
     run(" ภาษาอังกฤษ"),
   ]),
 
@@ -132,23 +136,23 @@ const body = [
       ),
     ),
     eduRow("มัธยมศึกษาตอนต้น", [
-      [run("{edu_lower_year}")],
-      [run("{edu_lower_school}")],
-      [run("{edu_lower_major}")],
-      [run("{edu_lower_gpa}")],
+      [run("{มัธยมต้น_ปีที่จบ}")],
+      [run("{มัธยมต้น_สถานศึกษา}")],
+      [run("{มัธยมต้น_สาขาวิชา}")],
+      [run("{มัธยมต้น_เกรดเฉลี่ย}")],
     ]),
     eduRow("มัธยมศึกษาตอนปลาย", [
-      [run("{edu_upper_year}")],
-      [run("{edu_upper_school}")],
-      [run("{edu_upper_major}")],
-      [run("{edu_upper_gpa}")],
+      [run("{มัธยมปลาย_ปีที่จบ}")],
+      [run("{มัธยมปลาย_สถานศึกษา}")],
+      [run("{มัธยมปลาย_สาขาวิชา}")],
+      [run("{มัธยมปลาย_เกรดเฉลี่ย}")],
     ]),
     eduRow("ปริญญาตรี", [
-      [run("{edu_bachelor_year}")],
+      [run("{ปริญญาตรี_ปีที่จบ}")],
       // ช่องนี้พิมพ์ค่าไว้ตายตัวเหมือนในฟอร์มจริง ไม่มี placeholder — merge แล้วต้องไม่ถูกแตะ
       [run("สถาบันเทคโนโลยีพระจอมเกล้าเจ้าคุณทหารลาดกระบัง")],
-      [run("{edu_bachelor_major}")],
-      [run("{edu_bachelor_gpa}")],
+      [run("{ปริญญาตรี_สาขาวิชา}")],
+      [run("{ปริญญาตรี_เกรดเฉลี่ย}")],
     ]),
   ]),
 
@@ -184,15 +188,15 @@ zip.file("word/styles.xml", stylesXml);
 writeFileSync(outFile, zip.generate({ type: "nodebuffer", compression: "DEFLATE" }));
 
 console.log(`สร้างแล้ว: ${outFile}`);
-console.log(`ฟอนต์: ${FONT} ${SIZE / 2}pt (ช่องติ๊กใช้ Wingdings)`);
+console.log(`ฟอนต์: ${FONT} ${SIZE / 2}pt (ช่องติ๊กใช้ ${SYMBOL_FONT})`);
 console.log();
 console.log("placeholder ที่ควร scan เจอ:");
-console.log("  ช่องกรอกธรรมดา 9 — student_name (ถูกแตกเป็น 3 run), student_id, faculty,");
-console.log("                     company_name, position, supervisor_name, job_description,");
-console.log("                     start_date, end_date");
-console.log("  ในเซลล์ตาราง  11 — edu_{lower,upper}_{year,school,major,gpa} +");
-console.log("                     edu_bachelor_{year,major,gpa} (ป.ตรีไม่มี _school");
-console.log("                     เพราะพิมพ์ KMITL ไว้ตายตัว)");
-console.log("  ช่องติ๊ก        2 — has_license (มี/ไม่มี), skills (ว่ายน้ำ/ขับรถ/ภาษาอังกฤษ)");
+console.log("  ช่องกรอกธรรมดา 9 — ชื่อ-นามสกุล (ถูกแตกเป็น 3 run), รหัสนักศึกษา, คณะ,");
+console.log("                     ชื่อสถานประกอบการ, ตำแหน่งงาน, ชื่อพนักงานที่ปรึกษา,");
+console.log("                     ลักษณะงาน, วันเริ่มงาน, วันสิ้นสุดงาน");
+console.log("  ในเซลล์ตาราง  11 — {มัธยมต้น,มัธยมปลาย}_{ปีที่จบ,สถานศึกษา,สาขาวิชา,เกรดเฉลี่ย}");
+console.log("                     + ปริญญาตรี_{ปีที่จบ,สาขาวิชา,เกรดเฉลี่ย}");
+console.log("                     (ป.ตรีไม่มี _สถานศึกษา เพราะพิมพ์ KMITL ไว้ตายตัว)");
+console.log("  ช่องติ๊ก        2 — ใบขับขี่ (มี/ไม่มี), ความสามารถพิเศษ (ว่ายน้ำ/ขับรถ/ภาษาอังกฤษ)");
 console.log();
 console.log("รวม 25 placeholder ดิบ → ยุบเหลือ 22 ฟิลด์ในฟอร์ม");

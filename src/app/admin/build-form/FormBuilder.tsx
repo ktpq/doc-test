@@ -21,8 +21,14 @@ const CHOICE_TYPES: FieldType[] = ["radio", "checkbox"];
 const needsOptions = (type: FieldType) =>
   type === "radio" || type === "select" || type === "checkbox";
 
-/** แปลง snake_case / kebab-case เป็น label ตั้งต้นที่พออ่านได้ */
+/**
+ * แปลง snake_case / kebab-case เป็น label ตั้งต้นที่พออ่านได้
+ *
+ * คีย์ที่ไม่ใช่ ASCII (ตั้งชื่อเป็นภาษาไทยมาแล้ว) คืนตามเดิม — ไม่งั้น {ชื่อ-นามสกุล}
+ * จะกลายเป็น label "ชื่อ นามสกุล" ทั้งที่ตั้งใจตั้งชื่อไทยมาเพื่อจะได้ไม่ต้องแก้ label
+ */
 function guessLabel(key: string) {
+  if (/[^\u0000-\u007F]/.test(key)) return key;
   return key.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 

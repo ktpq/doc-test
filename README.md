@@ -47,8 +47,12 @@ npm run smoke    # terminal 2
 |---|---|---|
 | `DEMO_DATA_DIR` | `.runtime/` | ที่เก็บ `db.json` และไฟล์ template |
 | `SOFFICE_PATH` | หาเอง | ชี้ตัว LibreOffice เองสำหรับแปลง PDF |
-| `CHECKBOX_CHECKED` | `þ` | สัญลักษณ์กล่องที่ติ๊กแล้ว (Wingdings) |
-| `CHECKBOX_UNCHECKED` | `o` | สัญลักษณ์กล่องว่าง |
+| `CHECKBOX_CHECKED` | `☑` | สัญลักษณ์กล่องที่ติ๊กแล้ว |
+| `CHECKBOX_UNCHECKED` | `☐` | สัญลักษณ์กล่องว่าง |
+
+สองตัวล่างต้องตั้งให้ตรงกับฟอนต์ของ run ช่องติ๊กในไฟล์ Word — ถ้า template ใช้ Wingdings
+ให้ตั้ง `CHECKBOX_CHECKED=þ CHECKBOX_UNCHECKED=o` และต้องตั้งทั้งตอนรันเซิร์ฟเวอร์และตอนรัน
+`npm run smoke` ดูรายละเอียดใน [FLOW.md](FLOW.md#ช่องติ๊กถูก--ขั้นตอนใน-word)
 
 ## แชร์ให้เพื่อนลองใช้
 
